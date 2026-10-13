@@ -14,6 +14,8 @@ export const Colors = {
     backgroundElement: '#F0F0F3',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
+    primary: '#1E68E8',
+    border: '#B7BAC2',
   },
   dark: {
     text: '#ffffff',
@@ -21,8 +23,13 @@ export const Colors = {
     backgroundElement: '#212225',
     backgroundSelected: '#2E3135',
     textSecondary: '#B0B4BA',
+    primary: '#5B8CFF',
+    border: '#55585F',
   },
 } as const;
+
+/** Translucent dark background for the bottom "Task Added!" notification. */
+export const SnackbarColor = 'rgba(66, 66, 66, 0.94)';
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
@@ -61,5 +68,6 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+/** Height of the bottom tab bar per platform (used for content + snackbar insets). */
+export const BottomTabInset = Platform.select({ ios: 50, android: 80, web: 72 }) ?? 0;
 export const MaxContentWidth = 800;

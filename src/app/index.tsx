@@ -1,98 +1,102 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { AddTaskForm } from '@/components/add-task-form';
+import { AppBar } from '@/components/app-bar';
+import { Snackbar } from '@/components/snackbar';
+import { TaskRow } from '@/components/task-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, Spacing } from '@/constants/theme';
+import { useTodos } from '@/context/todos-context';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+export default function ListScreen() {
+  const { todos, addTodo, toggleTodo, removeTodo } = useTodos();
+  const [snackVisible, setSnackVisible] = useState(false);
+  const [snackCount, setSnackCount] = useState(0);
+
+  const handleAdd = useCallback(
+    (text: string) => {
+      addTodo(text);
+      // Bump the count so the notification re-triggers on every add.
+      setSnackCount((count) => count + 1);
+      setSnackVisible(true);
+    },
+    [addTodo],
   );
-}
 
-export default function HomeScreen() {
+  const hideSnack = useCallback(() => setSnackVisible(false), []);
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
+    <ThemedView style={styles.screen}>
+      <AppBar />
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag">
+          <ThemedText type="subtitle" style={styles.heading}>
+            Add an item
           </ThemedText>
-        </ThemedView>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+          <AddTaskForm onSubmit={handleAdd} />
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+          <View style={styles.list}>
+            {todos.length === 0 ? (
+              <ThemedText themeColor="textSecondary" style={styles.empty}>
+                No tasks yet — type one above and tap SAVE.
+              </ThemedText>
+            ) : (
+              todos.map((todo) => (
+                <TaskRow
+                  key={todo.id}
+                  text={todo.text}
+                  done={todo.done}
+                  onToggle={() => toggleTodo(todo.id)}
+                  onRemove={() => removeTodo(todo.id)}
+                />
+              ))
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
+      <Snackbar
+        message="Task Added!"
+        visible={snackVisible}
+        showCount={snackCount}
+        onHide={hideSnack}
+      />
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
   },
-  safeArea: {
+  flex: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
+  content: {
     paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
+    paddingBottom: BottomTabInset + Spacing.six,
     gap: Spacing.four,
   },
-  title: {
-    textAlign: 'center',
+  heading: {
+    fontSize: 26,
+    lineHeight: 34,
   },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
+  list: {
     alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    gap: Spacing.two,
+    marginTop: Spacing.two,
+  },
+  empty: {
+    paddingVertical: Spacing.three,
   },
 });
